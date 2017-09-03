@@ -16,6 +16,7 @@ COMMANDS = {
     "φ" => [0, proc{PHI}],
     "e" => [0, proc{Math::E}],
     "Ç" => [0, proc{CODEPAGE}],
+    "ø" => [0, proc{nil}],
 
     # Arithmetic
     "_" => [1, proc{|i, a| i.vec1 a, &:-@}],
@@ -97,6 +98,16 @@ COMMANDS = {
     "‹" => [1, proc{|i, a| i.run a, i.lines.last - 1}],
     "₡" => [1, proc{|i, a| i.run a, i.lines.last}],
     "›" => [1, proc{|i, a| i.run a, i.lines.last + 1}],
+
+    # Registers
+    "Ͱ" => [1, proc{|i, a| i.regs[0xF8] = a}],
+    "Ͳ" => [1, proc{|i, a| i.regs[0xF9] = a}],
+    "Ͷ" => [1, proc{|i, a| i.regs[0xFA] = a}],
+    "ͱ" => [0, proc{|i| i.regs[0xF8]}],
+    "ͳ" => [0, proc{|i| i.regs[0xF9]}],
+    "ͷ" => [0, proc{|i| i.regs[0xFA]}],
+    "↦" => [3, proc{|i, a, b| i.regs[a] = b}],
+    "↤" => [1, proc{|i, a| i.regs[a]}],
 }
 
 DIGITS_N = "0123456789"
@@ -110,18 +121,20 @@ class Interpreter
         @lines = []
         tokens = code.chars
         until tokens.empty?
-            @ast.last.push parse tokens
+            @ast[-1] += parse tokens
             if tokens.first == "\n"
                 tokens.shift
                 @ast.push []
             end
         end
         @arguments = []
+        @regs = [nil]*256
     end
 
     attr_reader :arguments
     attr_reader :ast
     attr_reader :lines
+    attr_reader :regs
 
     def vec1(a, &f)
         if a.instance_of? Array
@@ -178,37 +191,47 @@ class Interpreter
         if DIGITS_N.include? tok
             n = 0
             n = (n * 10) + DIGITS_N.index(tokens.shift) while not tokens.empty? and DIGITS_N.include? tokens.first
-            [:N, n]
+            [[:N, n]]
         elsif DIGITS_S.include? tok
             n = 0
             n = (n * 10) + DIGITS_S.index(tokens.shift) while not tokens.empty? and DIGITS_S.include? tokens.first
-            [:N, n]
+            [[:N, n]]
+        elsif tok == "↦"
+            [[:C, tokens.shift, [:N, CODEPAGE.index(tokens.shift)]] + parse(tokens)]
+        elsif tok == "↤"
+            [[:C, tokens.shift, [:N, CODEPAGE.index(tokens.shift)]]]
         elsif COMMANDS.include? tok
             a = [:C, tokens.shift]
-            (COMMANDS[tok][1].arity - 1).times do
-                a.push parse tokens
-            end
-            a
+            l = []
+            l += parse tokens while l.length < (COMMANDS[tok][1].arity - 1)
+            [a + l]
         elsif DIGITS_A.include? tok
-            [:C, DIGITS_I[DIGITS_A.index(tokens.shift)], [:C, "A"]]
+            [[:C, DIGITS_I[DIGITS_A.index(tokens.shift)], [:C, "A"]]]
         elsif tok == "["
             l = []
             tokens.shift
-            l.push parse tokens while not tokens.empty? and tokens.first != "]"
+            l += parse tokens while not tokens.empty? and tokens.first != "]"
             tokens.shift
-            [:L, l]
-        elsif tok == '"'
-            s = ""
+            [[:L, l]]
+        elsif tok == "⟪"
+            a = [[:N, ""]]
             tokens.shift
-            s += tokens.shift while not tokens.empty? and tokens.first != '"'
+            while not tokens.empty? and tokens.first != "⟫"
+                if tokens.first == "⟪"
+                    a.push [:N, ""]
+                    tokens.shift
+                else
+                    a.last[1] += tokens.shift
+                end
+            end
             tokens.shift
-            [:N, s]
+            a
         elsif tok == "'"
             tokens.shift
-            [:N, tokens.shift]
-        elsif tok == "⁒"
+            [[:N, tokens.shift]]
+        elsif tok == '"'
             tokens.shift
-            [:N, tokens.shift + tokens.shift]
+            [[:N, tokens.shift + tokens.shift]]
         elsif not tokens.empty?
             fail "Syntax error"
         end
