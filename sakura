@@ -1,0 +1,293 @@
+#!/usr/bin/env ruby
+
+require "./codepage"
+require "prime"
+
+PHI = (1 + Math::sqrt(5)) / 2
+
+COMMANDS = {
+    # Constants
+    "T" => [0, proc{10}],
+    "Þ" => [0, proc{100}],
+    "H" => [0, proc{"Hello, World!"}],
+    "A" => [0, proc{|i| i.arguments.last}],
+    "U" => [0, proc{[]}],
+    "π" => [0, proc{Math::PI}],
+    "φ" => [0, proc{PHI}],
+    "e" => [0, proc{Math::E}],
+    "Ç" => [0, proc{CODEPAGE}],
+
+    # Arithmetic
+    "_" => [1, proc{|i, a| i.vec1 a, &:-@}],
+    "¬" => [1, proc{|i, a| i.vec1 a, &:~}],
+    "D" => [1, proc{|i, a| i.vec1(a) {|x| x * 2}}],
+    "Q" => [1, proc{|i, a| i.vec1(a) {|x| x * x}}],
+    "₊" => [1, proc{|i, a| i.vec1(a) {|x| x + 1}}],
+    "₋" => [1, proc{|i, a| i.vec1(a) {|x| x - 1}}],
+    "⌊" => [1, proc{|i, a| i.vec1(a) {|x| x.floor}}],
+    "⌈" => [1, proc{|i, a| i.vec1(a) {|x| x.ceil}}],
+    "!" => [1, proc{|i, a| i.vec1(a) {|x| i.factorial x}}],
+    "ƒ" => [1, proc{|i, a| i.vec1(a) {|x| i.revfact x}}],
+    "F" => [1, proc{|i, a| i.vec1(a) {|x| i.fib x}}],
+    "√" => [1, proc{|i, a| i.vec1(a) {|x| Math::sqrt x}}],
+    "Ƃ" => [1, proc{|i, a| i.vec1(a) {|x| 1.0 / x}}],
+    "a" => [1, proc{|i, a| i.vec1(a) {|x| x.abs}}],
+
+    "." => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| (x.to_s + "." + y.to_s.reverse).to_f}}],
+    "+" => [3, proc{|i, a, b| i.vec2 a, b, &:+}],
+    "-" => [3, proc{|i, a, b| i.vec2 a, b, &:-}],
+    "*" => [3, proc{|i, a, b| i.vec2 a, b, &:*}],
+    "/" => [3, proc{|i, a, b| i.vec2 a, b, &:/}],
+    "%" => [3, proc{|i, a, b| i.vec2 a, b, &:%}],
+    "∧" => [3, proc{|i, a, b| i.vec2 a, b, &:&}],
+    "⊼" => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| ~(x & y)}}],
+    "∨" => [3, proc{|i, a, b| i.vec2 a, b, &:|}],
+    "⊽" => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| ~(x | y)}}],
+    "⊻" => [3, proc{|i, a, b| i.vec2 a, b, &:^}],
+    "«" => [3, proc{|i, a, b| i.vec2 a, b, &:<<}],
+    "»" => [3, proc{|i, a, b| i.vec2 a, b, &:>>}],
+    "ⁿ" => [3, proc{|i, a, b| i.vec2 a, b, &:**}],
+    "Ø" => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| x ** (1.0 / y)}}],
+
+    # Tests
+    "p" => [1, proc{|i, a| i.vec1(a) {|x| Prime.prime?(x) ? -1 : 0}}],
+    "=" => [3, proc{|i, a, b| a == b ? -1 : 0}],
+    "≠" => [3, proc{|i, a, b| a != b ? -1 : 0}],
+    "<" => [3, proc{|i, a, b| a < b ? -1 : 0}],
+    ">" => [3, proc{|i, a, b| a > b ? -1 : 0}],
+    "≤" => [3, proc{|i, a, b| a <= b ? -1 : 0}],
+    "≥" => [3, proc{|i, a, b| a >= b ? -1 : 0}],
+
+    # Type conversion
+    "i" => [1, proc{|i, a| a.to_i}],
+    "f" => [1, proc{|i, a| a.to_f}],
+    "s" => [1, proc{|i, a| a.to_s}],
+    "$" => [1, proc{|i, a| i.vec1(a) {|x| encode(x).each_char.map(&:ord).reduce {|x, y| (x << 8) | y}}}],
+
+    # Array manipulation
+    ":" => [1, proc{|i, a| [a]}],
+    ";" => [3, proc{|i, a, b| [a, b]}],
+    "₀" => [1, proc{|i, a| a[0]}],
+    "₁" => [1, proc{|i, a| a[1]}],
+    "₂" => [1, proc{|i, a| a[2]}],
+    "₃" => [1, proc{|i, a| a[3]}],
+    "₄" => [1, proc{|i, a| a[4]}],
+    "₅" => [1, proc{|i, a| a[5]}],
+    "₆" => [1, proc{|i, a| a[6]}],
+    "₇" => [1, proc{|i, a| a[-3]}],
+    "₈" => [1, proc{|i, a| a[-2]}],
+    "₉" => [1, proc{|i, a| a[-1]}],
+    "ᵢ" => [3, proc{|i, a, b| a[b]}],
+    "ⱼ" => [7, proc{|i, a, b, c| a[b] = c}],
+    "R" => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| (x..y).to_a}}],
+    "r" => [3, proc{|i, a, b| i.vec2(a, b) {|x, y| (x...y).to_a}}],
+    "Ř" => [1, proc{|i, a| i.vec1(a) {|x| (1..x).to_a}}],
+    "ř" => [1, proc{|i, a| i.vec1(a) {|x| (0...x).to_a}}],
+    "M" => [1, proc{|i, a, b| a.map {|x| i.arguments.push [x]; e = i.eval b; i.arguments.pop; e}}],
+    "S" => [1, proc{|i, a, b| a.select {|x| i.arguments.push [x]; e = i.truthy i.eval b; i.arguments.pop; e}}],
+    "C" => [1, proc{|i, a, b| a.reduce {|x, y| i.arguments.push [x, y]; e = i.eval b; i.arguments.pop; e}}],
+    "#" => [3, proc{|i, a, b| a + b}],
+    "@" => [3, proc{|i, a, b| a * b}],
+
+    # Control flow
+    "I" => [1, proc{|i, a, b| i.eval b if i.truthy a}],
+    "E" => [1, proc{|i, a, b, c| if i.truthy a then i.eval b else i.eval c end}],
+    "W" => [0, proc{|i, a, b| i.eval b while i.truthy i.eval a}],
+    "L" => [3, proc{|i, a, b| i.run b, a}],
+    "‹" => [1, proc{|i, a| i.run a, i.lines.last - 1}],
+    "₡" => [1, proc{|i, a| i.run a, i.lines.last}],
+    "›" => [1, proc{|i, a| i.run a, i.lines.last + 1}],
+}
+
+DIGITS_N = "0123456789"
+DIGITS_S = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+DIGITS_A = "⓪①②③④⑤⑥⑦⑧⑨"
+DIGITS_I = "₀₁₂₃₄₅₆₇₈₉"
+
+class Interpreter
+    def initialize code
+        @ast = [[]]
+        @lines = []
+        tokens = code.chars
+        until tokens.empty?
+            @ast.last.push parse tokens
+            if tokens.first == "\n"
+                tokens.shift
+                @ast.push []
+            end
+        end
+        @arguments = []
+    end
+
+    attr_reader :arguments
+    attr_reader :ast
+    attr_reader :lines
+
+    def vec1(a, &f)
+        if a.instance_of? Array
+            a.map {|x| f[x]}
+        else
+            f[a]
+        end
+    end
+    def vec2(a, b, &f)
+        if a.instance_of? Array and b.instance_of? Array
+            (0...[a.length, b.length].max).map {|i| f[a[i % a.length], b[i % b.length]]}
+        elsif a.instance_of? Array and not b.instance_of? Array
+            a.map {|x| f[x, b]}
+        elsif not a.instance_of? Array and b.instance_of? Array
+            b.map {|y| f[a, y]}
+        else
+            f[a, b]
+        end
+    end
+
+    def truthy e
+        return (not e.empty?) if e.instance_of? Array
+        return (not e.empty?) if e.instance_of? String
+        return e != 0 if e.kind_of? Numeric
+        e
+    end
+    def factorial n
+        (1..n).reduce &:*
+    end
+    def revfact n
+        n = n.to_f
+        i = 1
+        while n > 1
+            i += 1
+            n /= i
+        end
+        n == 1 ? i : 0
+    end
+    def fib n
+        a = 0
+        b = 1
+        c = 1
+        (n - 1).times do
+            c = a + b
+            a = b
+            b = c
+        end
+        n == 0 ? 0 : c
+    end
+
+    def parse tokens
+        fail "Unexpected EOF" if tokens.empty?
+        tok = tokens.first
+        if DIGITS_N.include? tok
+            n = 0
+            n = (n * 10) + DIGITS_N.index(tokens.shift) while not tokens.empty? and DIGITS_N.include? tokens.first
+            [:N, n]
+        elsif DIGITS_S.include? tok
+            n = 0
+            n = (n * 10) + DIGITS_S.index(tokens.shift) while not tokens.empty? and DIGITS_S.include? tokens.first
+            [:N, n]
+        elsif COMMANDS.include? tok
+            a = [:C, tokens.shift]
+            (COMMANDS[tok][1].arity - 1).times do
+                a.push parse tokens
+            end
+            a
+        elsif DIGITS_A.include? tok
+            [:C, DIGITS_I[DIGITS_A.index(tokens.shift)], [:C, "A"]]
+        elsif tok == "["
+            l = []
+            tokens.shift
+            l.push parse tokens while not tokens.empty? and tokens.first != "]"
+            tokens.shift
+            [:L, l]
+        elsif tok == '"'
+            s = ""
+            tokens.shift
+            s += tokens.shift while not tokens.empty? and tokens.first != '"'
+            tokens.shift
+            [:N, s]
+        elsif tok == "'"
+            tokens.shift
+            [:N, tokens.shift]
+        elsif tok == "⁒"
+            tokens.shift
+            [:N, tokens.shift + tokens.shift]
+        elsif not tokens.empty?
+            fail "Syntax error"
+        end
+    end
+
+    def eval ast
+        case ast[0]
+        when :N
+            ast[1]
+        when :C
+            c = COMMANDS[ast[1]]
+            args = ast.drop(2).each_with_index.map {|x, i| (c[0] >> i) == 0 ? x : eval(x)}
+            c[1][self, *args]
+        when :L
+            ast[1].map {|e| eval e}
+        end
+    end
+
+    def run args=[], i=0
+        i %= @ast.length
+        args = [args] unless args.instance_of? Array
+        @arguments.push args
+        @lines.push i
+        last = nil
+        @ast[i].each do |e|
+            last = eval e
+        end
+        @lines.pop
+        @arguments.pop
+        last
+    end
+end
+
+opt = ARGV.shift
+f = ARGV.shift
+if f == "-"
+    stdin = IO.new 0, "rb:ASCII-8BIT"
+    ascii8bit = stdin.read
+elsif f
+    ascii8bit = File.read f, encoding: "ASCII-8BIT"
+else
+    ascii8bit = ""
+end
+utf8 = ascii8bit.force_encoding "UTF-8"
+
+case opt
+when "-u"
+    code = utf8
+when "-c"
+    code = decode ascii8bit
+when "-e"
+    print encode utf8
+    exit
+when "-d"
+    print decode ascii8bit
+    exit
+else
+    puts "Usage: option file"
+    puts "option:"
+    puts "\t-u Read file in UTF-8"
+    puts "\t-c Read file in Sakura's codepage"
+    puts "\t-e Encode file from UTF-8 to the codepage"
+    puts "\t-d Decode file from the codepage to UTF-8"
+    puts "file:"
+    puts "\t-  stdin"
+    exit
+end
+
+args = []
+ARGV.each do |arg|
+    if arg[0] == '"'
+        args.push arg[1..-1]
+    elsif arg[-1] == "f"
+        args.push arg[0..-2].to_f
+    else
+        args.push arg.to_i
+    end
+end
+
+i = Interpreter.new code
+e = i.run args
+puts e if e
