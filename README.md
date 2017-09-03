@@ -1,3 +1,3 @@
 # Sakura
 
-Sakura is a golfing language.
+Sakura is a recreational programming language designed to be concise.
