@@ -76,6 +76,7 @@ COMMANDS = {
     "_" => [1, proc{|i, a| vec1 a, &:-@}],
     "D" => [1, proc{|i, a| vec1(a) {|x| x * 2}}],
     "ħ" => [1, proc{|i, a| vec1(a) {|x| x / 2}}],
+    "Ŵ" => [1, proc{|i, a| vec1(a) {|x| x / 2.0}}],
     "Q" => [1, proc{|i, a| vec1(a) {|x| x * x}}],
     "₊" => [1, proc{|i, a| vec1(a) {|x| x + 1}}],
     "₋" => [1, proc{|i, a| vec1(a) {|x| x - 1}}],
@@ -100,11 +101,13 @@ COMMANDS = {
     "+" => [3, proc{|i, a, b| vec2 a, b, &:+}],
     "-" => [3, proc{|i, a, b| vec2 a, b, &:-}],
     "*" => [3, proc{|i, a, b| vec2 a, b, &:*}],
-    "/" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x.to_f / y.to_f}}],
+    "/" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x / y.to_f}}],
     "÷" => [3, proc{|i, a, b| vec2 a, b, &:/}],
     "%" => [3, proc{|i, a, b| vec2 a, b, &:%}],
     "ⁿ" => [3, proc{|i, a, b| vec2 a, b, &:**}],
     "Ø" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x ** (1.0 / y)}}],
+    "Ğ" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x.gcd y}}],
+    "ğ" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x.lcm y}}],
 
     # Logic
     "p" => [1, proc{|i, a| vec1(a) {|x| Prime.prime?(x) ? -1 : 0}}],
@@ -124,8 +127,8 @@ COMMANDS = {
     "»" => [3, proc{|i, a, b| vec2 a, b, &:>>}],
 
     # Type conversion
-    "i" => [1, proc{|i, a| a.to_i}],
-    "f" => [1, proc{|i, a| a.to_f}],
+    "i" => [1, proc{|i, a| vec1(a) {|x| x.to_i}}],
+    "f" => [1, proc{|i, a| vec1(a) {|x| x.to_f}}],
     "s" => [1, proc{|i, a| a.to_s}],
     "$" => [1, proc{|i, a| vec1(a) {|x| encode(x).each_char.map(&:ord).reduce {|x, y| (x << 8) | y}}}],
 
