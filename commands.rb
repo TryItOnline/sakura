@@ -92,6 +92,9 @@ COMMANDS = {
     "ƣ" => [1, proc{|i, a| a.min}],
     "Σ" => [1, proc{|i, a| a.reduce &:+}],
     "Π" => [1, proc{|i, a| a.reduce &:*}],
+    "ś" => [1, proc{|i, a| Math::sin a}],
+    "ð" => [1, proc{|i, a| Math::cos a}],
+    "ĳ" => [1, proc{|i, a| Math::tan a}],
 
     "." => [3, proc{|i, a, b| vec2(a, b) {|x, y| (x.to_s + "." + y.to_s.reverse).to_f}}],
     "+" => [3, proc{|i, a, b| vec2 a, b, &:+}],
