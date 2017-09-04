@@ -156,17 +156,22 @@ else
     exit
 end
 
-args = []
+args = [[]]
 ARGV.each do |arg|
     if arg[0] == '"'
-        args.push arg[1..-1]
+        args.last.push arg[1..-1]
     elsif arg[-1] == "f"
-        args.push arg[0..-2].to_f
+        args.last.push arg[0..-2].to_f
+    elsif arg == "["
+        args.push []
+    elsif arg == "]"
+        t = args.pop
+        args.last.push t
     else
-        args.push arg.to_i
+        args.last.push arg.to_i
     end
 end
 
 i = Interpreter.new code
-e = i.run args
+e = i.run args.pop
 puts e if e
