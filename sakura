@@ -174,4 +174,4 @@ end
 
 i = Interpreter.new code
 e = i.run args.pop
-puts e if e
+pprint e if e

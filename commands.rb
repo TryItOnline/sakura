@@ -49,6 +49,10 @@ def fib n
     n == 0 ? 0 : c
 end
 
+def pprint s
+    print s.to_s
+end
+
 PHI = (1 + Math::sqrt(5)) / 2
 
 COMMANDS = {
@@ -190,5 +194,5 @@ COMMANDS = {
 
     # Input/Output
     "Ꝇ" => [0, proc{STDIN.readline.chomp}],
-    "ꝇ" => [1, proc{|i, a| puts a}],
+    "ꝇ" => [1, proc{|i, a| pprint a}],
 }
