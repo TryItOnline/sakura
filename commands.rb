@@ -115,6 +115,7 @@ COMMANDS = {
 
     # Logic
     "p" => [1, proc{|i, a| vec1(a) {|x| Prime.prime?(x) ? -1 : 0}}],
+    "Ź" => [3, proc{|i, a, b| vec2(a, b) {|x, y| x % y == 0 ? -1 : 0}}],
     "¬" => [1, proc{|i, a| vec1 a, &:~}],
     "=" => [3, proc{|i, a, b| a == b ? -1 : 0}],
     "≠" => [3, proc{|i, a, b| a != b ? -1 : 0}],
