@@ -127,7 +127,7 @@ if f == "-"
     stdin = IO.new 0, "rb:ASCII-8BIT"
     ascii8bit = stdin.read
 elsif f
-    ascii8bit = File.read f, encoding: "ASCII-8BIT"
+    ascii8bit = File.read "#{Dir.pwd}/#{f}", encoding: "ASCII-8BIT"
 else
     ascii8bit = ""
 end
