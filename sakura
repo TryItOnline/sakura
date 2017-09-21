@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-require "./codepage"
-require "./commands"
+require ".#{__dir__}/codepage"
+require "#{__dir__}/commands"
 
 DIGITS_N = "0123456789"
 DIGITS_S = "⁰¹²³⁴⁵⁶⁷⁸⁹"
