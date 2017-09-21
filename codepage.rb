@@ -1,4 +1,4 @@
-t = File.read("./codepage.txt").lines.map do |l|
+t = File.read("#{__dir__}/codepage.txt").lines.map do |l|
     l = l.chomp.gsub " ", "\0"
     l + "\0" * (16 - l.length)
 end
